@@ -1,0 +1,25 @@
+args:
+- restore
+- --config=/etc/etcd/config/base/etcd.json
+- --bucket-info=/etc/etcd/cosi/bucket.json
+- --prefix=test-prefix
+command:
+- etcd-tools
+image: etcd-controller
+name: restore
+resources:
+  limits:
+    cpu: "4"
+    memory: 16G
+  requests:
+    cpu: "2"
+    memory: 4G
+volumeMounts:
+- mountPath: /etc/etcd/config/base
+  name: base-config
+  readOnly: true
+- mountPath: /etc/etcd/cosi
+  name: bucket-info
+  readOnly: true
+- mountPath: /var/lib/etcd
+  name: data

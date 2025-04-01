@@ -1,0 +1,20 @@
+containers:
+- args:
+  - defrag
+  - --endpoint=https://test-cluster.default.svc.cluster.local:2379
+  - --credentials-dir=/etc/etcd/pki
+  - --ratio=0.1
+  - --unused-size=1G
+  command:
+  - etcd-tools
+  image: etcd-controller
+  name: defrag
+  resources: {}
+  volumeMounts:
+  - mountPath: /etc/etcd/pki
+    name: pki
+restartPolicy: OnFailure
+volumes:
+- name: pki
+  secret:
+    secretName: test-cluster-user-root

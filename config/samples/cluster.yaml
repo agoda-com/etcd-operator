@@ -1,0 +1,19 @@
+apiVersion: etcd.fleet.agoda.com/v1
+kind: EtcdCluster
+metadata:
+  name: etcd-test
+spec:
+  version: v3.5.14
+  replicas: 3
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512M"
+    limits:
+      cpu: "500m"
+      memory: "512M"
+  backup:
+    enabled: true
+    secretName: etcd-backup
+  defrag:
+    enabled: true

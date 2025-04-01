@@ -1,0 +1,6 @@
+name: bucket-info
+secret:
+  items:
+  - key: BucketInfo
+    path: bucket.json
+  secretName: backup-secret

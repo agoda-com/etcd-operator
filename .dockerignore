@@ -1,0 +1,10 @@
+.git/
+
+build/
+.gitlab/
+.vscode/
+docs/
+hack/
+makefiles/
+config/
+skaffold.yaml

@@ -1,0 +1,24 @@
+build/
+go.work.sum
+coverage.xml
+
+# editor and IDE paraphernalia
+.idea/
+.vscode/
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+__debug_bin
+testbin/
+build.json
+.DS_Store
+
+# Test binary, build with `go test -c`
+*.swp
+*.swo
+*~

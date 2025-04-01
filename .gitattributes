@@ -1,0 +1,3 @@
+go.sum binary
+api/v1/zz_generated.*.go binary
+docs/design/backup/*.svg binary
