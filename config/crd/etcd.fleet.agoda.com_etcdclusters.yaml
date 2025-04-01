@@ -1,0 +1,331 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.1
+  name: etcdclusters.etcd.fleet.agoda.com
+spec:
+  group: etcd.fleet.agoda.com
+  names:
+    kind: EtcdCluster
+    listKind: EtcdClusterList
+    plural: etcdclusters
+    singular: etcdcluster
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Status
+      type: string
+    - jsonPath: .spec.replicas
+      name: Replicas
+      type: integer
+    - jsonPath: .status.readyReplicas
+      name: Ready
+      type: integer
+    - jsonPath: .status.availableReplicas
+      name: Available
+      type: integer
+    - jsonPath: .status.updatedReplicas
+      name: Updated
+      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: EtcdCluster is the Schema for the etcdclusters API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: EtcdClusterSpec defines the desired state of EtcdCluster
+            properties:
+              backup:
+                description: BackupSpec defines the configuration to backup cluster
+                  to
+                properties:
+                  enabled:
+                    type: boolean
+                  schedule:
+                    type: string
+                  secretName:
+                    type: string
+                type: object
+              commonAnnotations:
+                additionalProperties:
+                  type: string
+                description: CommonAnnotations
+                type: object
+              commonLabels:
+                additionalProperties:
+                  type: string
+                description: CommonLabels
+                type: object
+              defrag:
+                description: DefragSpec defines the configuration for automated cluster
+                  defrag
+                properties:
+                  enabled:
+                    type: boolean
+                  schedule:
+                    type: string
+                  threshold:
+                    properties:
+                      ratio:
+                        pattern: ^(1\.0|0\.[0-9]+)$
+                        type: string
+                      size:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        x-kubernetes-int-or-string: true
+                    type: object
+                type: object
+              priorityClassName:
+                description: PriorityClassName is the pod's priority
+                type: string
+              replicas:
+                default: 1
+                description: Replicas
+                format: int32
+                type: integer
+              resources:
+                description: |-
+                  Compute Resources required by each member of cluster.
+                  More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                properties:
+                  claims:
+                    description: |-
+                      Claims lists the names of resources, defined in spec.resourceClaims,
+                      that are used by this container.
+
+                      This is an alpha field and requires enabling the
+                      DynamicResourceAllocation feature gate.
+
+                      This field is immutable. It can only be set for containers.
+                    items:
+                      description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                      properties:
+                        name:
+                          description: |-
+                            Name must match the name of one entry in pod.spec.resourceClaims of
+                            the Pod where this field is used. It makes that resource available
+                            inside a container.
+                          type: string
+                        request:
+                          description: |-
+                            Request is the name chosen for a request in the referenced claim.
+                            If empty, everything from the claim is made available, otherwise
+                            only the result of this request.
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
+                  limits:
+                    additionalProperties:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    description: |-
+                      Limits describes the maximum amount of compute resources allowed.
+                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                    type: object
+                  requests:
+                    additionalProperties:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    description: |-
+                      Requests describes the minimum amount of compute resources required.
+                      If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                      otherwise to an implementation-defined value. Requests cannot exceed Limits.
+                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                    type: object
+                type: object
+              restore:
+                description: RestoreSpec defines the configuration to restore cluster
+                  from
+                properties:
+                  key:
+                    type: string
+                  prefix:
+                    type: string
+                  secretName:
+                    type: string
+                type: object
+              runtimeClassName:
+                description: RuntimeClassName is the pod's runtime class
+                type: string
+              storageMedium:
+                default: ""
+                description: StorageMedium=Memory creates emptyDir volume on tmpfs
+                type: string
+              storageQuota:
+                anyOf:
+                - type: integer
+                - type: string
+                default: 4G
+                description: StorageQuota sets a size limit on storage
+                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                x-kubernetes-int-or-string: true
+              version:
+                default: v3.5.7
+                description: Version
+                type: string
+            required:
+            - version
+            type: object
+          status:
+            description: EtcdClusterStatus defines the observed state of EtcdCluster
+            properties:
+              availableReplicas:
+                description: AvailableReplicas is the number of fully provisioned
+                  members.
+                format: int32
+                type: integer
+              backup:
+                description: Backup
+                properties:
+                  enabled:
+                    type: boolean
+                  lastScheduleTime:
+                    format: date-time
+                    type: string
+                  lastSuccessfulTime:
+                    format: date-time
+                    type: string
+                required:
+                - enabled
+                type: object
+              conditions:
+                description: Latest service status of cluster
+                items:
+                  properties:
+                    lastTransitionTime:
+                      format: date-time
+                      type: string
+                    message:
+                      type: string
+                    reason:
+                      type: string
+                    status:
+                      type: string
+                    type:
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              endpoint:
+                description: Endpoint is the etcd client endpoint
+                type: string
+              learnerReplicas:
+                description: LearnerReplicas
+                format: int32
+                type: integer
+              members:
+                description: Members is the status of each cluster member.
+                items:
+                  description: MemberStatus defines the observed state of EtcdCluster
+                    member
+                  properties:
+                    available:
+                      type: boolean
+                    endpoint:
+                      type: string
+                    errors:
+                      items:
+                        type: string
+                      type: array
+                    id:
+                      type: string
+                    lastSuccessfulTime:
+                      format: date-time
+                      type: string
+                    name:
+                      type: string
+                    role:
+                      type: string
+                    size:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    version:
+                      type: string
+                  required:
+                  - available
+                  - id
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - id
+                x-kubernetes-list-type: map
+              observedGeneration:
+                description: ObservedGeneration
+                format: int64
+                type: integer
+              phase:
+                description: Lifecycle phase
+                type: string
+              readyReplicas:
+                description: ReadyReplicas is the number of ready member pods.
+                format: int32
+                type: integer
+              replicas:
+                description: Replicas is the number of non-terminated members.
+                format: int32
+                type: integer
+              secretName:
+                description: SecretName is the name of the secret containing the etcd
+                  client certificate
+                type: string
+              updatedReplicas:
+                description: UpdatedReplicas is the number of members that are synced
+                  with cluster spec
+                format: int32
+                type: integer
+              version:
+                description: Version is the observed version of etcd cluster
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      scale:
+        specReplicasPath: .spec.replicas
+        statusReplicasPath: .status.replicas
+      status: {}

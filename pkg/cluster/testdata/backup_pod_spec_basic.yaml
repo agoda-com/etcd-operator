@@ -1,0 +1,30 @@
+containers:
+- args:
+  - backup
+  - --endpoint=https://test-cluster.default.svc.cluster.local:2379
+  - --credentials-dir=/etc/etcd/pki
+  - --bucket-info=/etc/etcd/cosi/bucket.json
+  - --prefix=default/test-cluster
+  command:
+  - etcd-tools
+  image: etcd-controller
+  name: backup
+  resources: {}
+  volumeMounts:
+  - mountPath: /etc/etcd/pki
+    name: pki
+    readOnly: true
+  - mountPath: /etc/etcd/cosi
+    name: bucket-info
+    readOnly: true
+restartPolicy: OnFailure
+volumes:
+- name: pki
+  secret:
+    secretName: test-cluster-user-root
+- name: bucket-info
+  secret:
+    items:
+    - key: BucketInfo
+      path: bucket.json
+    secretName: backup-secret

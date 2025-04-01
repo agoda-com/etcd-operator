@@ -1,0 +1,54 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: etcd-test
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - pods/eviction
+  verbs:
+  - create
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+- apiGroups:
+  - batch
+  resources:
+  - cronjobs
+  verbs:
+  - get
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - create
+  - get
+- apiGroups:
+  - etcd.fleet.agoda.com
+  resources:
+  - etcdclusters
+  verbs:
+  - create
+  - delete
+  - get
+  - patch
+- apiGroups:
+  - etcd.fleet.agoda.com
+  resources:
+  - etcdclusters/scale
+  verbs:
+  - get
+  - update

@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: etcd-operator
+spec:
+  template:
+    spec:
+      containers:
+        - name: operator
+          args:
+            - "--watch-namespaces=$(POD_NAMESPACE)"
+          env:
+            - name: GOCOVERDIR
+              value: /var/coverage
+          volumeMounts:
+            - name: coverage
+              mountPath: /var/coverage
+      volumes:
+        - name: coverage
+          emptyDir: {}
