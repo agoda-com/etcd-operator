@@ -1,6 +1,7 @@
 build/
 go.work.sum
 coverage.xml
+build.json
 
 # editor and IDE paraphernalia
 .idea/
