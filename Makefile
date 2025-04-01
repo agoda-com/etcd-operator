@@ -18,7 +18,7 @@ SKAFFOLD_NAMESPACE ?= fleet
 GOCOVERPKG := github.com/agoda-com/etcd-operator/pkg/...
 GOTESTARGS := -test.timeout=30m
 GOMUTESTARGS := ./pkg
-GOLANGCILINT_VERSION := v1.64.8
+GOLANGCILINT_VERSION := v2.0.2
 
 include makefiles/go.mk
 include makefiles/controller.mk

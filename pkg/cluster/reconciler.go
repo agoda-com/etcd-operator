@@ -352,8 +352,8 @@ func (r *Reconciler) ReconcileStatus(ctx context.Context, cluster *apiv1.EtcdClu
 				return
 			}
 
-			switch {
-			case resp.Leader == resp.Header.MemberId:
+			switch resp.Leader {
+			case resp.Header.MemberId:
 				status.Role = apiv1.MemberRoleLeader
 			default:
 				status.Role = apiv1.MemberRoleMember

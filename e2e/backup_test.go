@@ -43,7 +43,7 @@ func TestBackup(t *testing.T) {
 
 	// create some data
 	k, v := "leela", "turanga"
-	if _, err := ecl.KV.Put(ctx, k, v); err != nil {
+	if _, err := ecl.Put(ctx, k, v); err != nil {
 		t.Fatal("failed to put key:", err)
 	}
 
@@ -55,7 +55,7 @@ func TestBackup(t *testing.T) {
 	triggerCronJob(t, ctx, kcl, key, 5*time.Minute)
 
 	// delete data
-	if _, err := ecl.KV.Delete(ctx, k); err != nil {
+	if _, err := ecl.Delete(ctx, k); err != nil {
 		t.Fatal("failed to delete key:", err)
 	}
 
