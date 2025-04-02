@@ -64,6 +64,7 @@ jobs:
 
   e2e:
     name: E2E Test
+    if: github.actor!= 'dependabot-preview[bot]'
     needs: 
       - verify
       - image-build
@@ -75,12 +76,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Setup Skaffold
         uses: heypigeonhq/setup-skaffold@v1.0.0
         with:
@@ -90,9 +85,13 @@ jobs:
       - name: Bootstrap
         run: |
           kustomize build --enable-helm config/bootstrap | kubectl apply -f -
-          kubectl --namespace cert-manager wait --for=condition=Available deployment/cert-manager-webhook
+          kubectl wait deployment/cert-manager-webhook \
+            --namespace cert-manager \
+            --for=condition=Available \
+            --timeout=5m
           kubectl get namespace sandbox 2>/dev/null || kubectl create namespace sandbox
           mkdir build/
+          skaffold config set kind-disable-load true
       - name: Download image tags
         uses: actions/download-artifact@v4
         with:
@@ -112,6 +111,7 @@ jobs:
 
   coverage:
     name: Coverage Report
+    if: github.actor!= 'dependabot-preview[bot]'
     needs:
       - verify
       - e2e
@@ -121,14 +121,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage
-          path: build
       - name: Download E2E coverage report
         uses: actions/download-artifact@v4
         with:
           name: coverage-e2e
-          path: build
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: build/coverage.xml,build/coverage.e2e.xml
+          files: coverage.xml,coverage.e2e.xml

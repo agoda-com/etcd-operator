@@ -38,7 +38,7 @@ fetch-coverage: $(GOCOVERDIR)
 
 config/rbac/role.yaml:
 	$(CONTROLLER_GEN) > config/rbac/role.yaml \
-		paths=./pkg/... \
+		paths={./pkg/...,./cmd/...} \
 		rbac:roleName=etcd-operator \
 		output:rbac:stdout
 
@@ -46,7 +46,8 @@ config/e2e/test-role.yaml:
 	$(CONTROLLER_GEN) > config/e2e/test-role.yaml \
 		paths=./e2e/... \
 		rbac:roleName=etcd-test \
-		output:rbac:stdout
+		output:rbac:stdout | \
+	yq  -r '.kind = "Role" | .rules = .rules' > config/e2e/role.yaml
 
 config/e2e/role.yaml: config/rbac/role.yaml
 	mkdir -p config/e2e
@@ -54,4 +55,4 @@ config/e2e/role.yaml: config/rbac/role.yaml
 
 config/e2e/role-binding.yaml: config/rbac/role-binding.yaml
 	mkdir -p config/e2e
-	yq -r '.roleRef.kind = "Role"' config/rbac/role-binding.yaml >config/e2e/role-binding.yaml
+	yq -r '.kind = "RoleBinding" | .roleRef.kind = "Role"' config/rbac/role-binding.yaml >config/e2e/role-binding.yaml
