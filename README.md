@@ -1,5 +1,7 @@
 # ETCD Operator
 
+![Code Coverage](https://img.shields.io/badge/Code%20Coverage-26%25-critical?style=flat)
+
 ## Docs
 
 * [API](/docs/api.md)
@@ -15,8 +17,8 @@
 * [config/rbac](config/rbac) - cluster-wide RBAC
 
 ## Profiles
-* [config/sandbox](config/sandbox) - single namespace deployment with namespace-scoped RBAC
-* [config/e2e](config/e2e) - sandbox with coverage enabled on etcd-operator
+* [default](config/default) - default deployment
+* [config/e2e](config/e2e) - e2e rbac sandbox with coverage enabled on etcd-operator
 
 ## Running locally
 
@@ -28,7 +30,14 @@ Operator requires cert-manager and CRDs to be installed in the cluster.
 kustomize build --enable-helm config/bootstrap | kubectl apply -f -
 ```
 
-### Run
+### Deploy (docker+kubectl)
+
+```
+docker build --tag ghcr.io/agoda-com/etcd .
+kubectl apply -k config/default
+```
+
+### Deploy (skaffold)
 
 ```
 skaffold run 
@@ -70,11 +79,6 @@ make integration-test
 ```
 
 End-to-end tests:
-```sh
-make e2e-test
-```
-
-Run end-to-end tests on dev cluster:
 ```sh
 make e2e-test
 ```

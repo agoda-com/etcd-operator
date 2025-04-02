@@ -8,7 +8,6 @@ import (
 	cmv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type CertificateBuilder struct{ *cmv1.Certificate }
@@ -105,36 +104,18 @@ func (c CertificateBuilder) Subject(cn string, orgs ...string) CertificateBuilde
 	return c
 }
 
-func (c CertificateBuilder) SecretLabel(key, value string) CertificateBuilder {
-	if c.Spec.SecretTemplate == nil {
-		c.Spec.SecretTemplate = &cmv1.CertificateSecretTemplate{}
-	}
-
-	if c.Spec.SecretTemplate.Labels == nil {
-		c.Spec.SecretTemplate.Labels = make(map[string]string)
-	}
-
-	c.Spec.SecretTemplate.Labels[key] = value
-	return c
-}
-
 func (c CertificateBuilder) SecretLabels(labels map[string]string) CertificateBuilder {
 	if c.Spec.SecretTemplate == nil {
 		c.Spec.SecretTemplate = &cmv1.CertificateSecretTemplate{}
 	}
 
-	switch {
-	case c.Spec.SecretTemplate.Labels == nil:
-		c.Spec.SecretTemplate.Labels = labels
-	default:
-		maps.Copy(c.Spec.SecretTemplate.Labels, labels)
+	if c.Spec.SecretTemplate.Labels == nil {
+		c.Spec.SecretTemplate.Labels = map[string]string{}
 	}
 
-	return c
-}
+	maps.Copy(c.Spec.SecretTemplate.Labels, labels)
 
-func (c CertificateBuilder) Key() client.ObjectKey {
-	return client.ObjectKeyFromObject(c.Certificate)
+	return c
 }
 
 func (b *Builder) Certificate(names ...string) CertificateBuilder {

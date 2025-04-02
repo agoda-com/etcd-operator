@@ -13,11 +13,6 @@ manifests:
     paths:
       - config/default
 profiles:
-  - name: fleet
-    manifests:
-      kustomize:
-        paths:
-          - config/fleet
   - name: e2e
     build:
       artifacts:
