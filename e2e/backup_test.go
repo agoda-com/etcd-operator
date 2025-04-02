@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestBackup(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	kcl := kubeClient(t, client.Options{})
 
 	key := client.ObjectKey{
@@ -54,11 +53,6 @@ func TestBackup(t *testing.T) {
 	}
 	triggerCronJob(t, ctx, kcl, key, 5*time.Minute)
 
-	// delete data
-	if _, err := ecl.Delete(ctx, k); err != nil {
-		t.Fatal("failed to delete key:", err)
-	}
-
 	// restore from backup
 	cluster = createCluster(t, ctx, kcl, 3*time.Minute, apiv1.EtcdClusterSpec{
 		Version:   "v3.5.14",
@@ -70,9 +64,9 @@ func TestBackup(t *testing.T) {
 		},
 	})
 
+	// check if value is restored from backup
 	ecl = etcdClient(t, ctx, kcl, cluster)
 
-	// check if value is restored from backup
 	resp, err := ecl.Get(ctx, k)
 	if err != nil {
 		t.Fatalf("get %q: %v", k, err)

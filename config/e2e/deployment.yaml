@@ -15,6 +15,13 @@ spec:
           volumeMounts:
             - name: coverage
               mountPath: /var/coverage
+          resources:
+            limits:
+              cpu: 125m
+              memory: 128M
+            requests:
+              cpu: 125m
+              memory: 128M
       volumes:
         - name: coverage
           emptyDir: {}
