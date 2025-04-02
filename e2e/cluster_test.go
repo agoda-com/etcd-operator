@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"context"
 	"slices"
 	"strings"
 	"testing"
@@ -17,7 +16,7 @@ import (
 )
 
 func TestCluster(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	kcl := kubeClient(t, client.Options{})
 
 	cluster := createCluster(t, ctx, kcl, 3*time.Minute, apiv1.EtcdClusterSpec{

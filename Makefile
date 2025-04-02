@@ -34,7 +34,7 @@ fetch-coverage: $(GOCOVERDIR)
 	SKAFFOLD_RUN_ID=$(SKAFFOLD_RUN_ID) \
 	makefiles/scripts/skaffold/fetch-coverage app=etcd-operator
 
-.PHONY: config/rbac/role.yaml config/e2e/test-role.yaml
+.PHONY: config/rbac/role.yaml config/e2e/test-role.yaml config/e2e/role-binding.yaml
 
 config/rbac/role.yaml:
 	$(CONTROLLER_GEN) > config/rbac/role.yaml \
@@ -54,4 +54,4 @@ config/e2e/role.yaml: config/rbac/role.yaml
 
 config/e2e/role-binding.yaml: config/rbac/role-binding.yaml
 	mkdir -p config/e2e
-	yq -r '.kind = "RoleBinding"' config/rbac/role-binding.yaml >config/e2e/role-binding.yaml
+	yq -r '.roleRef.kind = "Role"' config/rbac/role-binding.yaml >config/e2e/role-binding.yaml
