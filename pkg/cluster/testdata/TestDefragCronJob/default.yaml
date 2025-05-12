@@ -1,0 +1,37 @@
+metadata:
+  creationTimestamp: null
+  name: test-cluster-defrag
+  namespace: default
+spec:
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+    spec:
+      activeDeadlineSeconds: 300
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+          containers:
+          - args:
+            - defrag
+            - --endpoint=https://test-cluster.default.svc.cluster.local:2379
+            - --credentials-dir=/etc/etcd/pki
+            command:
+            - etcd-tools
+            image: etcd-operator
+            name: defrag
+            resources: {}
+            volumeMounts:
+            - mountPath: /etc/etcd/pki
+              name: pki
+          restartPolicy: OnFailure
+          volumes:
+          - name: pki
+            secret:
+              secretName: test-cluster-user-root
+      ttlSecondsAfterFinished: 86400
+  schedule: 0 1 * * *
+  suspend: false
+status: {}

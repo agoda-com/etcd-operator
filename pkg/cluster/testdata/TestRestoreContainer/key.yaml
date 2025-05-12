@@ -1,0 +1,24 @@
+args:
+- restore
+- --config=/etc/etcd/config/etcd.json
+- --key=test-key
+command:
+- etcd-tools
+envFrom:
+- secretRef:
+    name: test-cluster-backup
+image: etcd-operator
+name: restore
+resources:
+  limits:
+    cpu: "1"
+    memory: 128M
+  requests:
+    cpu: "1"
+    memory: 128M
+volumeMounts:
+- mountPath: /etc/etcd/config
+  name: config
+  readOnly: true
+- mountPath: /var/lib/etcd
+  name: data

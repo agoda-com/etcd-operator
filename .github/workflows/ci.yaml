@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  push:
+
+jobs:
+  image-build:
+    name: Image Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Skaffold
+        uses: heypigeonhq/setup-skaffold@v1.0.0
+        with:
+          version: 2.14.1
+      - name: Build images
+        run: |
+          mkdir build
+          skaffold build --file-output=build/images.json
+      - name: Archive image tags
+        uses: actions/upload-artifact@v4
+        with:
+          name: images
+          path: build/images.json
+
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    env:
+      CODECOV_FILE: build/coverage.xml
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Go 
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - name: Generate
+        run: make generate format
+      - name: No changed files
+        run: git diff --name-status --exit-code
+      - name: Lint
+        run: make lint
+      - name: Integration test
+        run: make integration-test coverage
+      - name: Archive coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: ${{ env.CODECOV_FILE }}
+
+  e2e:
+    name: E2E Test
+    if: github.actor!= 'dependabot-preview[bot]'
+    needs: 
+      - verify
+      - image-build
+    runs-on: ubuntu-latest
+    env:
+      CODECOV_FILE: build/coverage.e2e.xml
+      SKAFFOLD_NAMESPACE: sandbox
+      SKAFFOLD_RUN_ID: e2e-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Skaffold
+        uses: heypigeonhq/setup-skaffold@v1.0.0
+        with:
+          version: 2.14.1
+      - name: Create Kind cluster
+        uses: helm/kind-action@v1
+      - name: Bootstrap
+        run: |
+          kustomize build --enable-helm config/bootstrap | kubectl apply -f -
+          kubectl wait deployment/cert-manager-webhook \
+            --namespace cert-manager \
+            --for=condition=Available \
+            --timeout=5m
+          kubectl get namespace sandbox 2>/dev/null || kubectl create namespace sandbox
+          mkdir build/
+          skaffold config set kind-disable-load true
+      - name: Download image tags
+        uses: actions/download-artifact@v4
+        with:
+          name: images
+          path: build
+      - name: Deploy
+        run: skaffold deploy --profile e2e --build-artifacts=build/images.json
+      - name: Run E2E tests
+        run: skaffold verify --namespace sandbox --build-artifacts=build/images.json
+      - name: Fetch coverage
+        run: make fetch-coverage
+      - name: Archive coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-e2e
+          path: ${{ env.CODECOV_FILE }}
+
+  coverage:
+    name: Coverage Report
+    if: github.actor!= 'dependabot-preview[bot]'
+    needs:
+      - verify
+      - e2e
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage
+      - name: Download E2E coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-e2e
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml,coverage.e2e.xml

@@ -1,0 +1,42 @@
+metadata:
+  creationTimestamp: null
+  name: test-cluster-backup
+  namespace: default
+spec:
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+    spec:
+      activeDeadlineSeconds: 300
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+          containers:
+          - args:
+            - backup
+            - --endpoint=https://test-cluster.default.svc.cluster.local:2379
+            - --credentials-dir=/etc/etcd/pki
+            - --prefix=default/test-cluster
+            command:
+            - etcd-tools
+            envFrom:
+            - secretRef:
+                name: test-cluster-backup
+            image: etcd-operator
+            name: backup
+            resources: {}
+            volumeMounts:
+            - mountPath: /etc/etcd/pki
+              name: pki
+              readOnly: true
+          restartPolicy: OnFailure
+          volumes:
+          - name: pki
+            secret:
+              secretName: test-cluster-user-root
+      ttlSecondsAfterFinished: 86400
+  schedule: 0 * * * *
+  suspend: false
+status: {}

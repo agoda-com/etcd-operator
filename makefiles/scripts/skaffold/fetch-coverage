@@ -1,0 +1,82 @@
+#!/bin/bash
+set -eEufo pipefail
+
+if [[ -z "${GOCOVERDIR:-}" ]]; then
+  echo "GOCOVERDIR is not set" >&2
+  exit 1
+fi
+
+SKAFFOLD_NAMESPACE="${SKAFFOLD_NAMESPACE:-default}"
+
+if [[ -z "${SKAFFOLD_KUBE_CONTEXT:-}" ]]; then
+  SKAFFOLD_KUBE_CONTEXT="$(kubectl config current-context)"
+fi
+
+IFS=',' read -ra _labels <<<"${1:-}"
+unset IFS
+
+if [[ -n "${SKAFFOLD_RUN_ID:-}" ]]; then
+  _labels+=("skaffold.dev/run-id=${SKAFFOLD_RUN_ID}")
+fi
+
+if [[ "${#_labels[@]}" -eq 0 ]]; then
+  echo "SKAFFOLD_RUN_ID or selector argument is required"
+  exit 1
+fi
+
+kubectl_exec() {
+  local _pod=$1
+  shift 1
+
+  kubectl exec "${_pod}" \
+    --context "${SKAFFOLD_KUBE_CONTEXT}" \
+    --namespace "${SKAFFOLD_NAMESPACE}" \
+    --request-timeout 10 \
+    -- $@
+}
+
+fetch_pod() {
+  local _pod=$1
+
+  echo "fetching coverage (${_pod})" >&2
+
+  # send USR1 signal to the process to dump coverage
+  kubectl_exec "${_pod}" kill -USR1 1
+
+  # wait 5s for the coverage to be ready
+  local _deadline=$(( $(date +%s) + 5 ))
+  while [[ -z "$(kubectl_exec "${_pod}" ls /var/coverage)" ]]; do
+    if [[ $(date +%s) -gt _deadline ]]; then
+      echo "timed out waiting for coverage" >&2
+      exit 1
+    fi
+    sleep 1
+  done
+
+  # fetch the coverage
+  kubectl_exec "${_pod}" \
+    tar -C /var/coverage -cf - . |
+    tar -x -C "${GOCOVERDIR}"
+}
+
+if [[ "${#_labels[@]}" -gt 0 ]]; then
+  _labels="${_labels[@]}"
+  _selector="--selector=${_labels// /,}"
+fi
+
+_pods=($(
+  kubectl get pods \
+    --context "${SKAFFOLD_KUBE_CONTEXT}" \
+    --namespace "${SKAFFOLD_NAMESPACE}" \
+    --output name \
+    ${_selector:-}
+))
+
+if [[ "${#_pods[@]}" -eq 0 ]]; then
+  echo "no pods found in namespace ${SKAFFOLD_NAMESPACE}" >&2
+  exit 1
+fi
+
+for _pod in "${_pods[@]}"; do
+  fetch_pod "${_pod}"
+done

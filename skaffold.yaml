@@ -1,0 +1,39 @@
+apiVersion: skaffold/v4beta12
+kind: Config
+metadata:
+  name: etcd
+build:
+  artifacts:
+    - image: ghcr.io/agoda-com/etcd-operator
+      docker: {}
+  local:
+    useBuildkit: true
+manifests:
+  kustomize:
+    paths:
+      - config/default
+profiles:
+  - name: e2e
+    build:
+      artifacts:
+        - image: ghcr.io/agoda-com/etcd-operator
+          docker:
+            buildArgs:
+              BASE_IMAGE: distroless/base-debian12:debug
+              GOFLAGS: "-covermode=atomic -coverpkg=github.com/agoda-com/etcd-operator/..."
+    manifests:
+      kustomize:
+        paths:
+          - config/e2e
+verify:
+  - name: etcd-test
+    container:
+      name: test
+      image: ghcr.io/agoda-com/etcd-operator
+      command:
+        - etcd-e2e-test
+      args:
+        - "-test.v"
+    executionMode:
+      kubernetesCluster:
+        jobManifestPath: config/tests/job.yaml
