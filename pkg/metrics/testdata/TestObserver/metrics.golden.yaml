@@ -1,0 +1,56 @@
+- dataPoints:
+  - attributes:
+      fleet.etcd.cluster.name: test-cluster
+      fleet.etcd.cluster.namespace: etcd
+    value: 3
+  description: Number of desired replicas
+  name: fleet.etcd.cluster.desired_replicas
+- dataPoints:
+  - attributes:
+      fleet.etcd.cluster.name: test-cluster
+      fleet.etcd.cluster.namespace: etcd
+    value: 3
+  description: Number of replicas
+  name: fleet.etcd.cluster.replicas
+- dataPoints:
+  - attributes:
+      fleet.etcd.cluster.name: test-cluster
+      fleet.etcd.cluster.namespace: etcd
+    value: 2
+  description: Number of ready replicas
+  name: fleet.etcd.cluster.ready_replicas
+- dataPoints:
+  - attributes:
+      fleet.etcd.cluster.name: test-cluster
+      fleet.etcd.cluster.namespace: etcd
+    value: 3
+  description: Number of updated replicas
+  name: fleet.etcd.cluster.updated_replicas
+- dataPoints:
+  - attributes:
+      fleet.etcd.cluster.name: test-cluster
+      fleet.etcd.cluster.namespace: etcd
+    value: 2
+  description: Number of available replicas
+  name: fleet.etcd.cluster.available_replicas
+- dataPoints:
+  - attributes:
+      fleet.etcd.cluster.name: test-cluster
+      fleet.etcd.cluster.namespace: etcd
+    value: 1
+  description: Number of learner replicas
+  name: fleet.etcd.cluster.learner_replicas
+- dataPoints:
+  - attributes:
+      fleet.etcd.cluster.name: test-cluster
+      fleet.etcd.cluster.namespace: etcd
+    value: 1747070520
+  description: Last backup schedule time
+  name: fleet.etcd.cluster.backup.last_schedule_time
+- dataPoints:
+  - attributes:
+      fleet.etcd.cluster.name: test-cluster
+      fleet.etcd.cluster.namespace: etcd
+    value: 1747070520
+  description: Last backup successful time
+  name: fleet.etcd.cluster.backup.last_successful_time
