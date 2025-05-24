@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"sync"
 
 	"go.opentelemetry.io/otel/metric"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -17,8 +18,7 @@ type Reconciler struct {
 	kcl   client.Client
 	meter metric.Meter
 
-	// no lock required - workqueue is stingy preventing concurrent reconciles of same resource
-	// https://pkg.go.dev/k8s.io/client-go/util/workqueue
+	mtx       sync.Mutex
 	observers map[client.ObjectKey]*Observer
 }
 
@@ -31,6 +31,7 @@ func SetupWithManager(mgr manager.Manager, meterProvider metric.MeterProvider) e
 	}
 
 	return builder.ControllerManagedBy(mgr).
+		Named("metrics").
 		For(&apiv1.EtcdCluster{}).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 4,
@@ -39,28 +40,58 @@ func SetupWithManager(mgr manager.Manager, meterProvider metric.MeterProvider) e
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
-	observer := r.observers[req.NamespacedName]
-
+	key := req.NamespacedName
 	cluster := &apiv1.EtcdCluster{}
-	err := r.kcl.Get(ctx, req.NamespacedName, cluster)
+	err := r.kcl.Get(ctx, key, cluster)
 	switch {
 	// passthrough error
 	case client.IgnoreNotFound(err) != nil:
 		return reconcile.Result{}, err
-	// unregister if cluster not found or deleted
-	case (err != nil || !cluster.DeletionTimestamp.IsZero()) && observer != nil:
-		err = observer.Unregister()
+	// delete observer if cluster not found or deleted
+	case err != nil || !cluster.DeletionTimestamp.IsZero():
+		err = r.Delete(key)
 		return reconcile.Result{}, err
-	// register observer
-	case observer == nil:
-		observer, err = Register(r.meter, cluster)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		r.observers[req.NamespacedName] = observer
+	}
+
+	observer, err := r.GetOrCreate(key)
+	if err != nil {
+		return reconcile.Result{}, err
 	}
 
 	observer.Update(cluster)
 
 	return reconcile.Result{}, nil
+}
+
+func (r *Reconciler) GetOrCreate(key client.ObjectKey) (*Observer, error) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	observer, ok := r.observers[key]
+	if ok {
+		return observer, nil
+	}
+
+	observer, err := Register(r.meter, key)
+	if err != nil {
+		return nil, err
+	}
+
+	r.observers[key] = observer
+
+	return observer, nil
+}
+
+func (r *Reconciler) Delete(key client.ObjectKey) error {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	observer, ok := r.observers[key]
+	if !ok {
+		return nil
+	}
+
+	delete(r.observers, key)
+
+	return observer.Unregister()
 }

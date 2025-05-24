@@ -10,6 +10,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
 	"go.opentelemetry.io/otel/sdk/metric"
@@ -60,7 +61,9 @@ func TestObserver(t *testing.T) {
 			},
 		},
 	}
-	observer, err := Register(meter, cluster)
+
+	key := client.ObjectKeyFromObject(cluster)
+	observer, err := Register(meter, key)
 	if err != nil {
 		t.Fatal("register:", err)
 	}
@@ -72,6 +75,7 @@ func TestObserver(t *testing.T) {
 	})
 
 	metrics := &metricdata.ResourceMetrics{}
+	observer.Update(cluster)
 	err = reader.Collect(t.Context(), metrics)
 	if err != nil {
 		t.Fatal("collect:", err)

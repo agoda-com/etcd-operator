@@ -26,13 +26,13 @@ func TestCluster(t *testing.T) {
 	})
 
 	t.Run("scale", func(t *testing.T) {
-		scale(t, kcl, cluster, 5)
-		poll(t, kcl, cluster, 2*time.Minute, available)
+		Scale(t, kcl, cluster, 5)
+		Poll(t, kcl, cluster, 2*time.Minute, Available)
 
 		t.Logf("cluster %q scaled up to 5 members", cluster.Name)
 
-		scale(t, kcl, cluster, 3)
-		poll(t, kcl, cluster, time.Minute, available)
+		Scale(t, kcl, cluster, 3)
+		Poll(t, kcl, cluster, time.Minute, Available)
 
 		t.Logf("cluster %q scaled down to 3 members", cluster.Name)
 	})
@@ -60,8 +60,8 @@ func TestCluster(t *testing.T) {
 		}
 		t.Log("evict pod", key)
 
-		poll(t, kcl, cluster, 2*time.Minute, func(cluster *apiv1.EtcdCluster) bool {
-			if !available(cluster) {
+		Poll(t, kcl, cluster, 2*time.Minute, func(cluster *apiv1.EtcdCluster) bool {
+			if !Available(cluster) {
 				return false
 			}
 
@@ -85,7 +85,7 @@ func TestCluster(t *testing.T) {
 		}
 
 		version = strings.TrimPrefix(version, "v")
-		poll(t, kcl, cluster, 5*time.Minute, func(cluster *apiv1.EtcdCluster) bool {
+		Poll(t, kcl, cluster, 5*time.Minute, func(cluster *apiv1.EtcdCluster) bool {
 			if !conditions.StatusTrue(cluster.Status.Conditions, apiv1.ClusterAvailable) {
 				return false
 			}

@@ -16,6 +16,7 @@ import (
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -147,14 +148,14 @@ func createCluster(t testing.TB, kcl client.Client, timeout time.Duration, spec 
 	key := client.ObjectKeyFromObject(cluster)
 	t.Logf("cluster %q created", key)
 
-	poll(t, kcl, cluster, timeout, available)
+	Poll(t, kcl, cluster, timeout, Available)
 
 	t.Logf("cluster %q available", key)
 
 	return cluster
 }
 
-func poll[T client.Object](t testing.TB, kcl client.Client, obj T, timeout time.Duration, f func(obj T) bool) {
+func Poll[T client.Object](t testing.TB, kcl client.Client, obj T, timeout time.Duration, f func(obj T) bool) {
 	t.Helper()
 
 	ctx, cancel := context.WithTimeout(t.Context(), timeout)
@@ -173,11 +174,11 @@ func poll[T client.Object](t testing.TB, kcl client.Client, obj T, timeout time.
 	}
 }
 
-func available(cluster *apiv1.EtcdCluster) bool {
+func Available(cluster *apiv1.EtcdCluster) bool {
 	return cluster.Status.AvailableReplicas == cluster.Spec.Replicas
 }
 
-func scale(t testing.TB, kcl client.Client, obj client.Object, replicas int32) {
+func Scale(t testing.TB, kcl client.Client, obj client.Object, replicas int32) {
 	scale := &autoscalingv1.Scale{}
 	err := kcl.SubResource("scale").Get(t.Context(), obj, scale)
 	if err != nil {
@@ -226,7 +227,11 @@ func triggerCronJob(t testing.TB, kcl client.Client, key client.ObjectKey, timeo
 	t.Logf("created job %q", client.ObjectKeyFromObject(job))
 
 	err = wait.PollUntilContextCancel(ctx, 500*time.Millisecond, true, func(ctx context.Context) (done bool, err error) {
-		if err := kcl.Get(ctx, client.ObjectKeyFromObject(job), job); err != nil {
+		err = kcl.Get(ctx, client.ObjectKeyFromObject(job), job)
+		switch {
+		case apierrors.IsTooManyRequests(err):
+			return false, err
+		case err != nil:
 			return true, fmt.Errorf("get backup job: %w", err)
 		}
 

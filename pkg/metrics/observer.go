@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
@@ -20,15 +22,13 @@ type Observer struct {
 	backupLastScheduleTime, backupLastSuccessfulTime                                              metric.Int64ObservableGauge
 }
 
-func Register(meter metric.Meter, cluster *apiv1.EtcdCluster) (*Observer, error) {
-	observer := &Observer{
+func Register(meter metric.Meter, key client.ObjectKey) (*Observer, error) {
+	o := &Observer{
 		attributes: attribute.NewSet(
-			attribute.String("fleet.etcd.cluster.namespace", cluster.Namespace),
-			attribute.String("fleet.etcd.cluster.name", cluster.Name),
+			attribute.String("fleet.etcd.cluster.namespace", key.Namespace),
+			attribute.String("fleet.etcd.cluster.name", key.Name),
 		),
 	}
-
-	observer.cluster.Store(cluster)
 
 	gauges := []struct {
 		name        string
@@ -38,42 +38,42 @@ func Register(meter metric.Meter, cluster *apiv1.EtcdCluster) (*Observer, error)
 		{
 			name:        "fleet.etcd.cluster.desired_replicas",
 			description: "Number of desired replicas",
-			dest:        &observer.desiredReplicas,
+			dest:        &o.desiredReplicas,
 		},
 		{
 			name:        "fleet.etcd.cluster.replicas",
 			description: "Number of replicas",
-			dest:        &observer.replicas,
+			dest:        &o.replicas,
 		},
 		{
 			name:        "fleet.etcd.cluster.ready_replicas",
 			description: "Number of ready replicas",
-			dest:        &observer.readyReplicas,
+			dest:        &o.readyReplicas,
 		},
 		{
 			name:        "fleet.etcd.cluster.updated_replicas",
 			description: "Number of updated replicas",
-			dest:        &observer.updatedReplicas,
+			dest:        &o.updatedReplicas,
 		},
 		{
 			name:        "fleet.etcd.cluster.available_replicas",
 			description: "Number of available replicas",
-			dest:        &observer.availableReplicas,
+			dest:        &o.availableReplicas,
 		},
 		{
 			name:        "fleet.etcd.cluster.learner_replicas",
 			description: "Number of learner replicas",
-			dest:        &observer.learnerReplicas,
+			dest:        &o.learnerReplicas,
 		},
 		{
 			name:        "fleet.etcd.cluster.backup.last_schedule_time",
 			description: "Last backup schedule time",
-			dest:        &observer.backupLastScheduleTime,
+			dest:        &o.backupLastScheduleTime,
 		},
 		{
 			name:        "fleet.etcd.cluster.backup.last_successful_time",
 			description: "Last backup successful time",
-			dest:        &observer.backupLastSuccessfulTime,
+			dest:        &o.backupLastSuccessfulTime,
 		},
 	}
 
@@ -88,40 +88,42 @@ func Register(meter metric.Meter, cluster *apiv1.EtcdCluster) (*Observer, error)
 		observables = append(observables, observable)
 	}
 
-	registration, err := meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
-		cluster := observer.cluster.Load()
-		if cluster == nil {
-			return nil
-		}
-
-		opts := []metric.ObserveOption{
-			metric.WithAttributeSet(observer.attributes),
-		}
-
-		o.ObserveInt64(observer.desiredReplicas, int64(cluster.Spec.Replicas), opts...)
-		o.ObserveInt64(observer.replicas, int64(cluster.Status.Replicas), opts...)
-		o.ObserveInt64(observer.readyReplicas, int64(cluster.Status.ReadyReplicas), opts...)
-		o.ObserveInt64(observer.updatedReplicas, int64(cluster.Status.UpdatedReplicas), opts...)
-		o.ObserveInt64(observer.availableReplicas, int64(cluster.Status.AvailableReplicas), opts...)
-		o.ObserveInt64(observer.learnerReplicas, int64(cluster.Status.LearnerReplicas), opts...)
-
-		if cluster.Status.Backup != nil && cluster.Status.Backup.LastScheduleTime != nil {
-			o.ObserveInt64(observer.backupLastScheduleTime, cluster.Status.Backup.LastScheduleTime.Unix(), opts...)
-		}
-
-		if cluster.Status.Backup != nil && cluster.Status.Backup.LastSuccessfulTime != nil {
-			o.ObserveInt64(observer.backupLastSuccessfulTime, cluster.Status.Backup.LastSuccessfulTime.Unix(), opts...)
-		}
-
-		return nil
-	}, observables...)
+	registration, err := meter.RegisterCallback(o.Observe, observables...)
 	if err != nil {
 		return nil, fmt.Errorf("register callback: %w", err)
 	}
 
-	observer.registration = registration
+	o.registration = registration
 
-	return observer, nil
+	return o, nil
+}
+
+func (o *Observer) Observe(ctx context.Context, observer metric.Observer) error {
+	cluster := o.cluster.Load()
+	if cluster == nil {
+		return nil
+	}
+
+	opts := []metric.ObserveOption{
+		metric.WithAttributeSet(o.attributes),
+	}
+
+	observer.ObserveInt64(o.desiredReplicas, int64(cluster.Spec.Replicas), opts...)
+	observer.ObserveInt64(o.replicas, int64(cluster.Status.Replicas), opts...)
+	observer.ObserveInt64(o.readyReplicas, int64(cluster.Status.ReadyReplicas), opts...)
+	observer.ObserveInt64(o.updatedReplicas, int64(cluster.Status.UpdatedReplicas), opts...)
+	observer.ObserveInt64(o.availableReplicas, int64(cluster.Status.AvailableReplicas), opts...)
+	observer.ObserveInt64(o.learnerReplicas, int64(cluster.Status.LearnerReplicas), opts...)
+
+	if cluster.Status.Backup != nil && cluster.Status.Backup.LastScheduleTime != nil {
+		observer.ObserveInt64(o.backupLastScheduleTime, cluster.Status.Backup.LastScheduleTime.Unix(), opts...)
+	}
+
+	if cluster.Status.Backup != nil && cluster.Status.Backup.LastSuccessfulTime != nil {
+		observer.ObserveInt64(o.backupLastSuccessfulTime, cluster.Status.Backup.LastSuccessfulTime.Unix(), opts...)
+	}
+
+	return nil
 }
 
 func (o *Observer) Update(cluster *apiv1.EtcdCluster) {
