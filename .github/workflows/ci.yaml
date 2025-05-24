@@ -4,8 +4,35 @@ on:
   push:
 
 jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    env:
+      CODECOV_FILE: build/coverage.xml
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Go 
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - name: Generate
+        run: make generate format
+      - name: No changed files
+        run: git diff --name-status --exit-code
+      - name: Lint
+        run: make lint
+      - name: Integration test
+        run: make integration-test coverage
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ${{ env.CODECOV_FILE }}
+
   image-build:
     name: Image Build
+    if: github.actor!= 'dependabot-preview[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -36,35 +63,9 @@ jobs:
           name: images
           path: build/images.json
 
-  verify:
-    name: Verify
-    runs-on: ubuntu-latest
-    env:
-      CODECOV_FILE: build/coverage.xml
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Go 
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.24'
-      - name: Generate
-        run: make generate format
-      - name: No changed files
-        run: git diff --name-status --exit-code
-      - name: Lint
-        run: make lint
-      - name: Integration test
-        run: make integration-test coverage
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ${{ env.CODECOV_FILE }}
   e2e:
     name: E2E Test
     if: false
-    # if: github.actor!= 'dependabot-preview[bot]'
     needs: 
       - verify
       - image-build
@@ -92,19 +93,15 @@ jobs:
           kubectl get namespace sandbox 2>/dev/null || kubectl create namespace sandbox
           mkdir build/
           skaffold config set kind-disable-load true
-      - name: Download image tags
-        uses: actions/download-artifact@v4
-        with:
-          name: images
-          path: build
       - name: Deploy
-        run: skaffold deploy --profile e2e --build-artifacts=build/images.json
+        run: skaffold run --profile e2e
       - name: Run E2E tests
         run: skaffold verify --namespace sandbox --build-artifacts=build/images.json
       - name: Fetch coverage
         run: make fetch-coverage
-      - name: Archive coverage report
-        uses: actions/upload-artifact@v4
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
         with:
-          name: coverage-e2e
-          path: ${{ env.CODECOV_FILE }}
+          name: e2e
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ${{ env.CODECOV_FILE }}
