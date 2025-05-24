@@ -1,0 +1,42 @@
+- dataPoints:
+  - attributes:
+      fleet.etcd.cluster.name: test-cluster
+      fleet.etcd.cluster.namespace: default
+    value: 3
+  description: Number of desired replicas
+  name: fleet.etcd.cluster.desired_replicas
+- dataPoints:
+  - attributes:
+      fleet.etcd.cluster.name: test-cluster
+      fleet.etcd.cluster.namespace: default
+    value: 0
+  description: Number of replicas
+  name: fleet.etcd.cluster.replicas
+- dataPoints:
+  - attributes:
+      fleet.etcd.cluster.name: test-cluster
+      fleet.etcd.cluster.namespace: default
+    value: 0
+  description: Number of ready replicas
+  name: fleet.etcd.cluster.ready_replicas
+- dataPoints:
+  - attributes:
+      fleet.etcd.cluster.name: test-cluster
+      fleet.etcd.cluster.namespace: default
+    value: 0
+  description: Number of updated replicas
+  name: fleet.etcd.cluster.updated_replicas
+- dataPoints:
+  - attributes:
+      fleet.etcd.cluster.name: test-cluster
+      fleet.etcd.cluster.namespace: default
+    value: 0
+  description: Number of available replicas
+  name: fleet.etcd.cluster.available_replicas
+- dataPoints:
+  - attributes:
+      fleet.etcd.cluster.name: test-cluster
+      fleet.etcd.cluster.namespace: default
+    value: 0
+  description: Number of learner replicas
+  name: fleet.etcd.cluster.learner_replicas

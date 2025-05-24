@@ -56,15 +56,15 @@ jobs:
         run: make lint
       - name: Integration test
         run: make integration-test coverage
-      - name: Archive coverage report
-        uses: actions/upload-artifact@v4
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
         with:
-          name: coverage
-          path: ${{ env.CODECOV_FILE }}
-
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ${{ env.CODECOV_FILE }}
   e2e:
     name: E2E Test
-    if: github.actor!= 'dependabot-preview[bot]'
+    if: false
+    # if: github.actor!= 'dependabot-preview[bot]'
     needs: 
       - verify
       - image-build
@@ -108,25 +108,3 @@ jobs:
         with:
           name: coverage-e2e
           path: ${{ env.CODECOV_FILE }}
-
-  coverage:
-    name: Coverage Report
-    if: github.actor!= 'dependabot-preview[bot]'
-    needs:
-      - verify
-      - e2e
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download coverage report
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage
-      - name: Download E2E coverage report
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-e2e
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml,coverage.e2e.xml

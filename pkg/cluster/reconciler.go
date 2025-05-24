@@ -43,8 +43,8 @@ type Reconciler struct {
 	config   Config
 }
 
-// CreateControllerWithManager creates a new manager
-func CreateControllerWithManager(mgr manager.Manager, tlsCache *etcd.TLSCache, config Config) error {
+// SetupWithManager creates a new manager
+func SetupWithManager(mgr manager.Manager, tlsCache *etcd.TLSCache, config Config) error {
 	rateLimiter := workqueue.NewTypedItemFastSlowRateLimiter[reconcile.Request](1*time.Second, 5*time.Second, 10)
 	reconciler := &Reconciler{
 		kcl:      mgr.GetClient(),

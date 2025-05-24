@@ -39,6 +39,7 @@ import (
 
 	"github.com/agoda-com/etcd-operator/pkg/cluster"
 	"github.com/agoda-com/etcd-operator/pkg/etcd"
+	"github.com/agoda-com/etcd-operator/pkg/metrics"
 )
 
 func main() {
@@ -97,12 +98,23 @@ func run(ctx context.Context, logger logr.Logger, kubeconfig *rest.Config, confi
 		return fmt.Errorf("tls cache: %w", err)
 	}
 
-	err = cluster.CreateControllerWithManager(mgr, tlsCache, cluster.Config{
-		Image:           config.Image,
-		ControllerImage: config.ControllerImage,
+	err = cluster.SetupWithManager(mgr, tlsCache, cluster.Config{
+		Image:             config.Image,
+		ControllerImage:   config.ControllerImage,
+		PriorityClassName: config.PriorityClassName,
+		BackupEnv:         config.BackupEnv,
 	})
 	if err != nil {
 		return fmt.Errorf("cluster controller: %w", err)
+	}
+
+	meterProvider, err := SetupTelemetry(ctx)
+	if err != nil {
+		return fmt.Errorf("metrics provider: %w", err)
+	}
+	err = metrics.SetupWithManager(mgr, meterProvider)
+	if err != nil {
+		return fmt.Errorf("metrics controller: %w", err)
 	}
 
 	err = mgr.AddHealthzCheck("ping", healthz.Ping)
