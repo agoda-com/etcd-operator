@@ -6,7 +6,7 @@ on:
 jobs:
   verify:
     name: Verify
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-set
     env:
       CODECOV_FILE: build/coverage.xml
     steps:
@@ -32,8 +32,8 @@ jobs:
 
   image-build:
     name: Image Build
-    if: github.actor!= 'dependabot-preview[bot]'
-    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+    runs-on: arc-runner-set
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,10 +49,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Setup Skaffold
-        uses: heypigeonhq/setup-skaffold@v1.0.0
+      - uses: supplypike/setup-bin@v4
         with:
-          version: 2.14.1
+          uri: 'https://storage.googleapis.com/skaffold/releases/v2.16.1/skaffold-linux-amd64'
+          name: 'skaffold'
+          version: 'v2.16.1'
       - name: Build images
         run: |
           mkdir build
@@ -65,11 +66,11 @@ jobs:
 
   e2e:
     name: E2E Test
-    if: false
+    if: github.actor != 'dependabot[bot]'
     needs: 
       - verify
       - image-build
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-set
     env:
       CODECOV_FILE: build/coverage.e2e.xml
       SKAFFOLD_NAMESPACE: sandbox
